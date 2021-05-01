@@ -3,11 +3,14 @@
 
 program vs process
 ==================
-- Program contains a set of instructions designed to complete a specific task. 
-- Process is an instance of an executing program. ... 
+- Program is a **set of instructions designed to complete a specific task**. 
+- Process is an **instance of  program that is under execution**.
+
+note:- 
 - Program is a passive entity as it resides in the secondary memory. 
 - Process is a active entity as it is created during execution and loaded into the main memory.
 
 LG explanation
 - Program itself is  some thing static,sequence of instruction stored in Disc.
-- process is nothing but "program in action".
+- process is nothing but **"program in action"**.
+ 
