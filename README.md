@@ -37,7 +37,7 @@ The locking API in the standard system library can be summarized as follows:
 The standard I/O library includes a utility function named **fcntl** that can be used to inspect and manipulate both exclusive and shared locks on a file.
 
 For file locking, Linux provides the library function **flock**, which is a thin wrapper around fcntl.
-
+# Producer End
     #include <stdio.h>
     #include <stdlib.h>
     #include <fcntl.h>
@@ -161,3 +161,40 @@ If the producer gains the lock, the program writes two text records to the file.
 - if the file is not currently locked, then the consumer tries to gain a shared (read-only) lock (**F_RDLCK**).
 - **F_RDLCK** lock does prevent any other process from writing to the file, but allows other processes to read from the file.
 - a shared lock can be held by multiple processes. After gaining a shared lock, the consumer program reads the bytes one at a time from the file, prints the bytes to the standard output, releases the lock, closes the file, and terminates.       
+
+# Shared memory
+- Two or more process can access the common memory. And communication is done via this shared memory where changes made by one process can be viewed by another process.
+
+SYSTEM CALLS USED ARE:
+
+
+
+- **ftok()**: is use to generate a unique key.
+
+- **shmget()**: int shmget(key_t,size_tsize,intshmflg); upon successful completion, shmget() returns an identifier for the shared memory segment.
+
+- **shmat()**: Before you can use a shared memory segment, you have to attach yourself to it, using shmat(). 
+
+       void *shmat(int shmid ,void *shmaddr ,int shmflg);
+      *shmid* is shared memory id. 
+      *shmaddr* specifies specific address to use but we should set it to zero and, OS will automatically choose the address.
+
+- **shmdt()**: When you’re done with the shared memory segment, your program should detach itself from it using shmdt(). 
+
+      int shmdt(void *shmaddr);
+
+- **shmctl()**: when you detach from shared memory,it is not destroyed. So, to destroy
+- **shmctl()** is used. 
+
+      shmctl(int shmid,IPC_RMID,NULL);
+
+
+
+The problem with pipes, fifo and message queue – is that for two process to exchange information. The information has to go through the kernel.
+
+- Server reads from the input file.
+- The server writes this data in a message using either a pipe, fifo or message queue.
+- The client reads the data from the IPC channel,again requiring the data to be copied from kernel’s IPC buffer to the client’s buffer.
+- Finally the data is copied from the client’s buffer.
+- A total of four copies of data are required (2 read and 2 write). So, shared memory provides a way by letting two or more processes share a memory segment. With Shared Memory the data is only copied twice – from input file into shared memory and from shared memory to the output file.
+
