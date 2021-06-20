@@ -255,3 +255,10 @@ The problem with pipes, fifo and message queue – is that for two process to ex
 
       return 0;
      }
+
+# Message Queues
+A message queue is a linked list of messages stored within the kernel and identified by a message queue identifier. 
+- A new queue is created or an existing queue opened by **msgget()**. 
+- New messages are added to the end of a queue by **msgsnd()**. 
+- when the message is added to a queue. Messages are fetched from a queue by **msgrcv()**.
+- we can fetch messages based on their type field.Each message is given an identification or type so that processes can select the appropriate message.
