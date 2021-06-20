@@ -86,7 +86,78 @@ The main steps are:-
       lock.l_type = F_WRLCK; /* exclusive lock (read-write) rather than a shared (read-only) lock*/ 
 - If the producer gains the lock, then no other process will be able to write or read the file until the producer releases the lock, either explicitly with the appropriate call to fcntl or implicitly by closing the file.
 - However, the locking API allows only designated bytes to be locked.
-- The first call to fcntl:
+- The first call to fcntl:tries to lock the file exclusively,
 
       if (fcntl(fd, F_SETLK, &lock) < 0)
       
+- In general, the fcntl function returns -1  [failure.]
+- F_SETLK [means setlock]is non blocking returns immediately, either granting the lock or indicating failure.
+- if the flag used instead F_SETLKW (W is for wait) , the call to fcntl would block until gaining the lock was possible.
+- the first argument ,fd is the file descriptor.
+- the second argument specifies the action to be taken (F_SETLK for setting the lock), and 
+- the third argument is the address of the lock structure (&lock).
+
+If the producer gains the lock, the program writes two text records to the file.
+
+- After writing to the file, the producer changes the lock structure's **l_type** field to the unlock value ,and calls **fcntl** to perform the unlocking operation. The program finishes up by closing the file and exiting.
+
+      lock.l_type = F_UNLCK;
+# Consumer end:-
+      #include <stdio.h>
+      #include <stdlib.h>
+      #include <fcntl.h>
+      #include <unistd.h>
+
+      #define FileName "data.dat"
+
+      void report_and_exit(const char* msg) {
+        perror(msg);
+        exit(-1); /* EXIT_FAILURE */
+      }
+
+      int main() {
+        struct flock lock;
+        lock.l_type = F_WRLCK;    /* read/write (exclusive) lock */
+        lock.l_whence = SEEK_SET; /* base for seek offsets */
+        lock.l_start = 0;         /* 1st byte in file */
+        lock.l_len = 0;           /* 0 here means 'until EOF' */
+        lock.l_pid = getpid();    /* process id */
+
+        int fd; /* file descriptor to identify a file within a process */
+        if ((fd = open(FileName, O_RDONLY)) < 0)  /* -1 signals an error */
+          report_and_exit("open to read failed...");
+
+        /* If the file is write-locked, we can't continue. */
+        fcntl(fd, F_GETLK, &lock); /* sets lock.l_type to F_UNLCK if no write lock */
+        if (lock.l_type != F_UNLCK)
+          report_and_exit("file is still write locked...");
+
+        lock.l_type = F_RDLCK; /* prevents any writing during the reading */
+        if (fcntl(fd, F_SETLK, &lock) < 0)
+          report_and_exit("can't get a read-only lock...");
+
+        /* Read the bytes (they happen to be ASCII codes) one at a time. */
+        int c; /* buffer for read bytes */
+        while (read(fd, &c, 1) > 0)    /* 0 signals EOF */
+          write(STDOUT_FILENO, &c, 1); /* write one byte to the standard output */
+
+        /* Release the lock explicitly. */
+        lock.l_type = F_UNLCK;
+        if (fcntl(fd, F_SETLK, &lock) < 0)
+          report_and_exit("explicit unlocking failed...");
+
+        close(fd);
+        return 0;
+      }
+ 
+- the consumer program first checks whether the file is exclusively locked and only then tries to gain a shared lock. 
+
+      lock.l_type = F_WRLCK;
+      ...
+      fcntl(fd, F_GETLK, &lock); /* sets lock.l_type to F_UNLCK if no write lock */
+      if (lock.l_type != F_UNLCK)
+        report_and_exit("file is still write locked...");
+- **F_GETLK** operation specified in the fcntl call checks for a lock  
+- if the file is not currently locked, then the consumer tries to gain a shared (read-only) lock (**F_RDLCK**).
+- **F_RDLCK** lock does prevent any other process from writing to the file, but allows other processes to read from the file.
+- a shared lock can be held by multiple processes. After gaining a shared lock, the consumer program reads the bytes one at a time from the file, prints the bytes to the standard output, releases the lock, closes the file, and terminates.       
