@@ -475,3 +475,4 @@ Inside Child Process :
          exit(0);
         }
        }
+https://www.geeksforgeeks.org/input-output-system-calls-c-create-open-close-read-write/
